@@ -250,11 +250,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const domEl = document.getElementById("pake-top-dom");
 
-  domEl.addEventListener("touchstart", () => {
+  const shouldSkipDragStart = (e) => {
+    const t = e && e.target;
+    if (!t || typeof t.closest !== "function") return false;
+
+    // When the OSK / IME is interacting with editable elements on Linux,
+    // starting a window drag can steal focus and break input (e.g. backspace).
+    return !!t.closest(
+      "input, textarea, select, [contenteditable=''], [contenteditable='true'], [role='textbox']",
+    );
+  };
+
+  domEl.addEventListener("touchstart", (e) => {
+    if (shouldSkipDragStart(e)) return;
     appWindow.startDragging();
   });
 
   domEl.addEventListener("mousedown", (e) => {
+    if (shouldSkipDragStart(e)) return;
     e.preventDefault();
     if (e.buttons === 1 && e.detail !== 2) {
       appWindow.startDragging();
