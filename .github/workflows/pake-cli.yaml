@@ -37,7 +37,7 @@ on:
         description: "Start in fullscreen mode"
         required: false
         type: boolean
-        default: true
+        default: false
       hide_title_bar:
         description: "Hide title bar (macOS only)"
         required: false
@@ -98,7 +98,7 @@ jobs:
         timeout-minutes: 25
         shell: bash
         run: |
-          ARGS="${{ inputs.url }} --name ${{ inputs.name }} --fullscreen --incognito  --ignore-certificate-errors --keep-binary"
+          ARGS="${{ inputs.url }} --name ${{ inputs.name }} --incognito  --ignore-certificate-errors --keep-binary"
 
           if [ -n "${{ inputs.icon }}" ]; then
             ARGS="$ARGS --icon ${{ inputs.icon }}"
