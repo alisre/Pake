@@ -13,15 +13,15 @@ on:
         default: "macos-latest"
         type: choice
         options:
-          - "windows-latest"
-          - "macos-latest"
           - "ubuntu-24.04"
       url:
         description: "Website URL"
         required: true
+        default: "https://127.0.0.1/#/login"
       name:
         description: "App name (lowercase for Linux)"
         required: true
+        default: "FlexLite"
       icon:
         description: "Icon URL, auto-fetch if empty"
         required: false
@@ -42,7 +42,7 @@ on:
         description: "Hide title bar (macOS only)"
         required: false
         type: boolean
-        default: false
+        default: true
       multi_arch:
         description: "Universal binary (macOS only)"
         required: false
@@ -98,7 +98,7 @@ jobs:
         timeout-minutes: 25
         shell: bash
         run: |
-          ARGS="${{ inputs.url }} --name ${{ inputs.name }}"
+          ARGS="${{ inputs.url }} --name ${{ inputs.name }} --incognito  --ignore-certificate-errors --keep-binary"
 
           if [ -n "${{ inputs.icon }}" ]; then
             ARGS="$ARGS --icon ${{ inputs.icon }}"
@@ -131,71 +131,16 @@ jobs:
           echo "Running: node dist/cli.js $ARGS"
           node dist/cli.js $ARGS
 
-      - name: Build App (Windows)
-        if: runner.os == 'Windows'
-        timeout-minutes: 25
-        shell: pwsh
-        run: |
-          $args = "${{ inputs.url }}", "--name", "${{ inputs.name }}"
 
-          if ("${{ inputs.icon }}" -ne "") {
-            $args += "--icon", "${{ inputs.icon }}"
-          }
-
-          if ("${{ inputs.width }}" -ne "") {
-            $args += "--width", "${{ inputs.width }}"
-          }
-
-          if ("${{ inputs.height }}" -ne "") {
-            $args += "--height", "${{ inputs.height }}"
-          }
-
-          if ("${{ inputs.fullscreen }}" -eq "true") {
-            $args += "--fullscreen"
-          }
-
-          if ("${{ inputs.hide_title_bar }}" -eq "true") {
-            $args += "--hide-title-bar"
-          }
-
-          Write-Host "Running: node dist/cli.js $($args -join ' ')"
-          node dist/cli.js $args
-
-          git checkout -- src-tauri/Cargo.lock
-
-      - name: Upload DMG (macOS)
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.name }}-macOS
-          path: ${{ inputs.name }}.dmg
-          retention-days: 3
-
-      - name: Upload DEB (Linux)
+      - name: Upload binary (Linux)
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.name }}-Linux-deb
-          path: ${{ inputs.name }}.deb
+          path: |
+            *-binary
           retention-days: 3
           if-no-files-found: ignore
-
-      - name: Upload AppImage (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.name }}-Linux-AppImage
-          path: ${{ inputs.name }}.AppImage
-          retention-days: 3
-          if-no-files-found: ignore
-
-      - name: Upload MSI (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.name }}-Windows
-          path: ${{ inputs.name }}.msi
-          retention-days: 3
 
       - name: Rust cache store
         uses: actions/cache/save@v4.2.0
