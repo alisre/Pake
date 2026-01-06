@@ -255,7 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   domEl.addEventListener("mousedown", (e) => {
-    e.preventDefault();
+    // Don't prevent default on editable elements to preserve input functionality
+    const target = e.target;
+    const isEditable = target && (
+      target.isContentEditable ||
+      ['INPUT', 'TEXTAREA'].includes(target.tagName) ||
+      target.closest('[contenteditable="true"]')
+    );
+    
+    if (!isEditable) {
+      e.preventDefault();
+    }
+    
     if (e.buttons === 1 && e.detail !== 2) {
       appWindow.startDragging();
     }
@@ -569,10 +580,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Fix Chinese input method "Enter" on Safari
+  // Note: On Linux/Wayland with GNOME, we need to be careful not to block
+  // IME events that the system needs. Only stop propagation on Safari/macOS.
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.key === "Process") e.stopPropagation();
+      // Only apply this fix on Safari (macOS), not on Linux
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari && e.key === "Process") {
+        e.stopPropagation();
+      }
     },
     true,
   );
