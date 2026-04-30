@@ -559,3 +559,24 @@ docker run --rm --privileged \
     ghcr.io/tw93/pake \
     https://example.com --name MyApp --icon ./icon.png --targets appimage
 ```
+
+## 运行时参数（已打包二进制）
+
+下列参数由**打包后的二进制自身**接受，与 `pake` 构建 CLI 无关；仅本次进程有效，不写盘。
+
+| 参数 | 说明 |
+|---|---|
+| `--url <URL>` | 覆盖 `pake.json` 中编译期 URL。URL **必须**以 `http://` 或 `https://` 开头 |
+| `--ignore-cert` | 启用 Chromium 的 `--ignore-certificate-errors`，对所有 HTTPS 请求（含跳转）跳过证书校验。默认关闭。与 `pake.json` 中 `windows[0].ignore_certificate_errors` 是 OR 合并关系 |
+
+### 示例
+
+```shell
+./browser --url https://stage.intra.example.com
+./browser --url https://localhost:8443 --ignore-cert
+./browser   # 回退到 pake.json 内编译期 URL
+```
+
+### 本次破坏性变更
+
+早期原型在 host 为 `localhost` / `127.0.0.1` 时会**隐式**启用 `ignore_certificate_errors`。该隐式行为已被**移除**：现在必须通过 `--ignore-cert` 或 `pake.json` **显式**启用。内网自签证书用户请在启动时显式带上 flag。

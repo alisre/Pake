@@ -561,3 +561,24 @@ docker run --rm --privileged \
     ghcr.io/tw93/pake \
     https://example.com --name myapp --icon ./icon.png --targets appimage
 ```
+
+## Runtime Arguments (Packaged Binary)
+
+The following arguments are accepted by the **packaged binary** itself (not the `pake` build CLI). They take effect at app startup and are valid only for the current process — nothing is persisted to disk.
+
+| Argument | Description |
+|---|---|
+| `--url <URL>` | Override the compile-time URL from `pake.json`. URL **must** start with `http://` or `https://`. |
+| `--ignore-cert` | Enable Chromium's `--ignore-certificate-errors`. Skips SSL certificate validation for all HTTPS requests (including redirects). Disabled by default. OR-merged with `pake.json` `windows[0].ignore_certificate_errors`. |
+
+### Examples
+
+```shell
+./browser --url https://stage.intra.example.com
+./browser --url https://localhost:8443 --ignore-cert
+./browser   # falls back to the URL baked into pake.json
+```
+
+### Breaking change in this release
+
+Earlier prototype builds **implicitly** enabled `ignore_certificate_errors` when the URL host was `localhost` or `127.0.0.1`. This implicit behavior has been **removed**: you now must opt in explicitly via `--ignore-cert` or `pake.json`. Internal-network users with self-signed certificates should set the flag at launch.

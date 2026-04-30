@@ -348,3 +348,16 @@ node ./tests/release.js
 
 - [CLI 文档](cli-usage_CN.md)
 - [GitHub 讨论区](https://github.com/tw93/Pake/discussions)
+
+## 自签名 / 内部 CA 证书
+
+Pake 提供两层 opt-in 入口跳过 TLS 证书校验：
+
+1. **构建期（持久）** — 在打包前把 `src-tauri/pake.json` 中 `windows[0].ignore_certificate_errors` 设为 `true`，打出来的二进制对任何 HTTPS 站点都信任。
+2. **运行期（单次）** — 给打包后的二进制传 `--ignore-cert`，仅本次进程有效，不写盘。
+
+二者是 **OR 合并**关系：任一为真即跳过校验。
+
+### 安全提示
+
+关闭证书校验会让 HTTPS 失去对 MITM（中间人攻击）的保护。**只在**确认网络路径可信（例如内网 + 私有 CA）的情况下使用。该选项必须**显式**开启 — Pake 从本版本起**不再**根据 host 自动启用证书旁路。

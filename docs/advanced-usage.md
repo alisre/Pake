@@ -348,3 +348,16 @@ If you only want the release workflow smoke test, run `node ./tests/release.js` 
 
 - [CLI Documentation](cli-usage.md)
 - [GitHub Discussions](https://github.com/tw93/Pake/discussions)
+
+## Self-Signed / Internal CA Certificates
+
+Pake supports two layers of opt-in to skip TLS certificate validation:
+
+1. **Build-time (persistent)** — set `windows[0].ignore_certificate_errors: true` in `src-tauri/pake.json` before building. The packaged binary always trusts any HTTPS site.
+2. **Runtime (per-launch)** — pass `--ignore-cert` to the packaged binary. Effect is limited to that single process; nothing is persisted.
+
+The two sources are **OR-merged**: if either is true, validation is skipped.
+
+### Security note
+
+Disabling certificate validation defeats the protection HTTPS provides against MITM. Enable it **only** when you know the network path is trusted (e.g. internal LAN with a private CA). The option must be turned on **explicitly** — Pake never auto-disables validation based on hostname (as of this release).
