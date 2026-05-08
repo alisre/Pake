@@ -301,7 +301,17 @@ fn build_window(
     #[cfg(target_os = "linux")]
     let mut linux_browser_args = String::from("--disable-blink-features=AutomationControlled");
 
-    if window_config.ignore_certificate_errors {
+    // On Linux, fullscreen (kiosk) mode automatically enables cert bypass so
+    // operators can deploy against self-signed HTTPS endpoints without a rebuild.
+    // On macOS and Windows the existing explicit flag is the only trigger.
+    #[cfg(target_os = "linux")]
+    let effective_ignore_cert =
+        window_config.ignore_certificate_errors || window_config.fullscreen;
+
+    #[cfg(not(target_os = "linux"))]
+    let effective_ignore_cert = window_config.ignore_certificate_errors;
+
+    if effective_ignore_cert {
         #[cfg(target_os = "windows")]
         {
             windows_browser_args.push_str(" --ignore-certificate-errors");
