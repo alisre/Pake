@@ -19,7 +19,7 @@ use app::{
     setup::{set_global_shortcut, set_system_tray},
     window::{open_additional_window_safe, set_window, MultiWindowState},
 };
-use util::get_pake_config;
+use util::{get_pake_config, parse_runtime_url};
 
 pub fn run_app() {
     #[cfg(target_os = "linux")]
@@ -32,7 +32,32 @@ pub fn run_app() {
         }
     }
 
-    let (pake_config, tauri_config) = get_pake_config();
+    let (mut pake_config, tauri_config) = get_pake_config();
+
+    // Runtime URL override: --url <http(s)://address>
+    if let Some(raw_url) = parse_runtime_url() {
+        match url::Url::parse(&raw_url) {
+            Err(_) => {
+                eprintln!("[Pake] Error: --url '{}' is not a valid URL", raw_url);
+                std::process::exit(1);
+            }
+            Ok(parsed) => {
+                let scheme = parsed.scheme();
+                if scheme != "http" && scheme != "https" {
+                    eprintln!(
+                        "[Pake] Error: --url only accepts http:// or https:// schemes; \
+                         url_type is immutable after build"
+                    );
+                    std::process::exit(1);
+                }
+                println!("[Pake] URL overridden at runtime: {}", raw_url);
+                if let Some(window) = pake_config.windows.first_mut() {
+                    window.url = raw_url;
+                }
+            }
+        }
+    }
+
     let tauri_app = tauri::Builder::default();
 
     let show_system_tray = pake_config.show_system_tray();

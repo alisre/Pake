@@ -561,3 +561,51 @@ docker run --rm --privileged \
     ghcr.io/tw93/pake \
     https://example.com --name myapp --icon ./icon.png --targets appimage
 ```
+
+## Runtime Flags (Binary Execution)
+
+The following flags are for use when **running a compiled Pake binary**, not when building with `pake-cli`. They are not visible in the build-time `pake --help` output.
+
+### `--url <http(s)://address>`
+
+Override the URL that was baked in at build time. This lets a single binary serve different web endpoints without rebuilding.
+
+```bash
+# Launch the compiled app pointing to a different URL
+./MyApp --url https://192.168.1.100/dashboard
+
+# Show runtime help
+./MyApp --help
+```
+
+**Rules:**
+- Only `http://` and `https://` schemes are accepted. Other schemes (e.g., `file://`) will cause the app to exit with an error.
+- An empty or whitespace-only value falls back to the baked-in URL with a warning.
+- All other window configuration (dimensions, navigation rules, zoom, etc.) from build time remains in effect.
+
+### Kiosk Mode: Automatic Certificate Bypass (Linux / Ubuntu 24.04)
+
+When a binary is built with `fullscreen: true` (kiosk mode) and runs on **Linux**, self-signed HTTPS certificate errors are automatically bypassed — no rebuild required.
+
+This works by automatically passing `--ignore-certificate-errors` to the WebKitGTK WebView process whenever the app is fullscreen on Linux.
+
+```bash
+# Build with fullscreen enabled
+pake https://internal.example.com --name KioskApp --fullscreen
+
+# On Ubuntu 24.04: launch against a self-signed HTTPS endpoint — loads without TLS error
+./KioskApp
+# Or with runtime URL override:
+./KioskApp --url https://192.168.1.100
+```
+
+> **Security notice**: Bypassing certificate errors means TLS validation is disabled for the session. Use this only in controlled kiosk deployments where the network environment is trusted. Do not enable this for general-purpose applications exposed to untrusted networks.
+
+**Platform behaviour:**
+
+| Platform | `fullscreen: true` auto-bypass | Explicit `ignore_certificate_errors: true` |
+|---|---|---|
+| Linux (Ubuntu 24.04) | ✅ Yes | ✅ Yes |
+| macOS | ❌ No | ✅ Yes |
+| Windows | ❌ No | ✅ Yes |
+

@@ -559,3 +559,51 @@ docker run --rm --privileged \
     ghcr.io/tw93/pake \
     https://example.com --name MyApp --icon ./icon.png --targets appimage
 ```
+
+## 运行时参数（二进制程序执行）
+
+以下参数用于**运行已编译的 Pake 二进制程序**时使用，不适用于构建阶段的 `pake-cli` 命令，也不会在 `pake --help` 中显示。
+
+### `--url <http(s)://地址>`
+
+覆盖构建时内置的 URL，使同一个二进制程序可以指向不同的 Web 地址，无需重新构建。
+
+```bash
+# 启动编译好的程序并指向不同的 URL
+./MyApp --url https://192.168.1.100/dashboard
+
+# 查看运行时帮助
+./MyApp --help
+```
+
+**规则：**
+- 仅接受 `http://` 和 `https://` 协议。其他协议（如 `file://`）将导致程序退出并显示错误信息。
+- 空值或纯空白字符会回退到内置 URL，并在 stderr 打印警告信息。
+- 构建时的其他窗口配置（尺寸、导航规则、缩放等）保持不变。
+
+### Kiosk 模式：自动忽略证书错误（Linux / Ubuntu 24.04）
+
+当二进制程序以 `fullscreen: true`（kiosk 模式）构建，并在 **Linux** 上运行时，自签名 HTTPS 证书错误会被自动忽略——无需重新构建。
+
+其原理是：在 Linux 上，当程序为全屏模式时，自动向 WebKitGTK WebView 进程传递 `--ignore-certificate-errors` 参数。
+
+```bash
+# 构建时启用全屏
+pake https://internal.example.com --name KioskApp --fullscreen
+
+# 在 Ubuntu 24.04 上，连接自签名 HTTPS 服务时直接加载，不会出现 TLS 错误
+./KioskApp
+# 或结合运行时 URL 覆盖使用：
+./KioskApp --url https://192.168.1.100
+```
+
+> **安全提示**：忽略证书错误意味着本次会话禁用了 TLS 验证。请仅在受控的 kiosk 部署场景中使用，确保网络环境可信。不建议在面向不可信网络的通用应用中启用此功能。
+
+**各平台行为对比：**
+
+| 平台 | `fullscreen: true` 自动绕过 | 显式设置 `ignore_certificate_errors: true` |
+|---|---|---|
+| Linux（Ubuntu 24.04） | ✅ 支持 | ✅ 支持 |
+| macOS | ❌ 不支持 | ✅ 支持 |
+| Windows | ❌ 不支持 | ✅ 支持 |
+

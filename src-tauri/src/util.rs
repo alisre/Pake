@@ -3,6 +3,45 @@ use std::env;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Config, Manager, WebviewWindow};
 
+/// Parse `--url <value>` from process arguments at runtime.
+///
+/// Returns `Some(url_string)` when the flag is present and the value is
+/// non-empty, or `None` when the flag is absent or the value is empty /
+/// whitespace (in the latter case a warning is printed to stderr).
+///
+/// This function also handles `--help` / `-h` by printing usage and exiting 0.
+pub fn parse_runtime_url() -> Option<String> {
+    let args: Vec<String> = env::args().collect();
+
+    // Handle --help / -h
+    if args.get(1).map(|a| a == "--help" || a == "-h").unwrap_or(false) {
+        let binary = args.first().map(|s| s.as_str()).unwrap_or("pake-app");
+        println!("Usage: {} [--url <http(s)://address>]", binary);
+        println!();
+        println!("Options:");
+        println!("  --url <address>   Override the baked-in URL at launch time.");
+        println!("                    Only http:// and https:// schemes are accepted.");
+        println!("  --help, -h        Show this help message and exit.");
+        std::process::exit(0);
+    }
+
+    // Find --url flag followed by a value
+    let mut iter = args.iter().skip(1);
+    while let Some(arg) = iter.next() {
+        if arg == "--url" {
+            match iter.next() {
+                Some(val) if !val.trim().is_empty() => return Some(val.clone()),
+                Some(_) | None => {
+                    eprintln!("[Pake] Warning: --url value is empty, using baked-in URL");
+                    return None;
+                }
+            }
+        }
+    }
+
+    None
+}
+
 pub fn get_pake_config() -> (PakeConfig, Config) {
     #[cfg(feature = "cli-build")]
     let pake_config: PakeConfig = serde_json::from_str(include_str!("../.pake/pake.json"))
