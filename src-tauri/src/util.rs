@@ -16,11 +16,12 @@ pub fn parse_runtime_url() -> Option<String> {
     // Handle --help / -h
     if args.get(1).map(|a| a == "--help" || a == "-h").unwrap_or(false) {
         let binary = args.first().map(|s| s.as_str()).unwrap_or("pake-app");
-        println!("Usage: {} [--url <http(s)://address>]", binary);
+        println!("Usage: {} [--url <http(s)://address>] [--ignore-cert]", binary);
         println!();
         println!("Options:");
         println!("  --url <address>   Override the baked-in URL at launch time.");
         println!("                    Only http:// and https:// schemes are accepted.");
+        println!("  --ignore-cert     Ignore TLS certificate errors (self-signed certs).");
         println!("  --help, -h        Show this help message and exit.");
         std::process::exit(0);
     }
@@ -40,6 +41,14 @@ pub fn parse_runtime_url() -> Option<String> {
     }
 
     None
+}
+
+/// Returns `true` when `--ignore-cert` is present in the process arguments.
+///
+/// This allows operators to bypass TLS certificate validation at runtime
+/// (e.g. self-signed certs on internal HTTPS endpoints).
+pub fn parse_runtime_ignore_cert() -> bool {
+    env::args().any(|a| a == "--ignore-cert")
 }
 
 pub fn get_pake_config() -> (PakeConfig, Config) {

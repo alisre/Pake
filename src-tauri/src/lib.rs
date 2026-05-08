@@ -19,7 +19,7 @@ use app::{
     setup::{set_global_shortcut, set_system_tray},
     window::{open_additional_window_safe, set_window, MultiWindowState},
 };
-use util::{get_pake_config, parse_runtime_url};
+use util::{get_pake_config, parse_runtime_ignore_cert, parse_runtime_url};
 
 pub fn run_app() {
     #[cfg(target_os = "linux")]
@@ -55,6 +55,14 @@ pub fn run_app() {
                     window.url = raw_url;
                 }
             }
+        }
+    }
+
+    // Runtime cert bypass: --ignore-cert
+    if parse_runtime_ignore_cert() {
+        println!("[Pake] TLS certificate errors will be ignored (--ignore-cert).");
+        if let Some(window) = pake_config.windows.first_mut() {
+            window.ignore_certificate_errors = true;
         }
     }
 
