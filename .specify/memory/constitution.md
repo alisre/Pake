@@ -115,18 +115,19 @@ community-contribution scale.
 
 **Permitted technologies** (changes require a constitution amendment):
 
-| Layer | Technology | Version |
-|---|---|---|
-| CLI runtime | Node.js + pnpm | pnpm ≥ 8 |
-| CLI language | TypeScript | 5.x |
-| Desktop runtime | Tauri | v2.x |
-| Systems language | Rust | stable (see `rust-toolchain.toml`) |
-| JS bundler (CLI) | Rollup | as in `rollup.config.js` |
-| Test framework (TS) | Vitest | as in `vitest.config.ts` |
-| Package manager (JS) | pnpm | no npm/yarn |
-| Package manager (Rust) | Cargo | standard toolchain |
+| Layer                  | Technology     | Version                            |
+| ---------------------- | -------------- | ---------------------------------- |
+| CLI runtime            | Node.js + pnpm | pnpm ≥ 8                           |
+| CLI language           | TypeScript     | 5.x                                |
+| Desktop runtime        | Tauri          | v2.x                               |
+| Systems language       | Rust           | stable (see `rust-toolchain.toml`) |
+| JS bundler (CLI)       | Rollup         | as in `rollup.config.js`           |
+| Test framework (TS)    | Vitest         | as in `vitest.config.ts`           |
+| Package manager (JS)   | pnpm           | no npm/yarn                        |
+| Package manager (Rust) | Cargo          | standard toolchain                 |
 
 **Strictly forbidden**:
+
 - Electron, NW.js, or any bundled-Chromium framework
 - `npm` or `yarn` as the JS package manager (pnpm only)
 - Direct DOM manipulation of target web pages from Rust
@@ -216,6 +217,7 @@ and verbal agreements. When a conflict exists between any document and this
 Constitution, this Constitution prevails.
 
 **Amendment procedure**:
+
 1. Open a GitHub issue describing the proposed change and rationale.
 2. Achieve consensus among active maintainers (minimum 2 approvals).
 3. Update this file with the new content and increment the version per
@@ -224,6 +226,7 @@ Constitution, this Constitution prevails.
 5. Tag the commit `constitution-vX.Y.Z`.
 
 **Versioning policy**:
+
 - **MAJOR**: Principle removed, renamed, or fundamentally redefined;
   breaking change to the CLI public interface.
 - **MINOR**: New principle or section added; material expansion of existing

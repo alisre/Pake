@@ -577,6 +577,7 @@ docker run --rm --privileged \
 ```
 
 **规则：**
+
 - 仅接受 `http://` 和 `https://` 协议。其他协议（如 `file://`）将导致程序退出并显示错误信息。
 - 空值或纯空白字符会回退到内置 URL，并在 stderr 打印警告信息。
 - 构建时的其他窗口配置（尺寸、导航规则、缩放等）保持不变。
@@ -601,9 +602,8 @@ pake https://internal.example.com --name KioskApp --fullscreen
 
 **各平台行为对比：**
 
-| 平台 | `fullscreen: true` 自动绕过 | 显式设置 `ignore_certificate_errors: true` |
-|---|---|---|
-| Linux（Ubuntu 24.04） | ✅ 支持 | ✅ 支持 |
-| macOS | ❌ 不支持 | ✅ 支持 |
-| Windows | ❌ 不支持 | ✅ 支持 |
-
+| 平台                  | `fullscreen: true` 自动绕过 | 显式设置 `ignore_certificate_errors: true` |
+| --------------------- | --------------------------- | ------------------------------------------ |
+| Linux（Ubuntu 24.04） | ✅ 支持                     | ✅ 支持                                    |
+| macOS                 | ❌ 不支持                   | ✅ 支持                                    |
+| Windows               | ❌ 不支持                   | ✅ 支持                                    |

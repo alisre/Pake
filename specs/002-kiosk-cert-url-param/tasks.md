@@ -19,8 +19,8 @@
 
 **Purpose**: Establish test scaffolding and confirm existing tests pass before any changes are made.
 
-- [X] T001 Verify existing test suite passes: run `pnpm test --run` and confirm zero failures — baseline for regression detection
-- [X] T002 [P] Verify existing Rust build: run `cargo build --manifest-path src-tauri/Cargo.toml` and confirm clean compile — baseline for Rust changes
+- [x] T001 Verify existing test suite passes: run `pnpm test --run` and confirm zero failures — baseline for regression detection
+- [x] T002 [P] Verify existing Rust build: run `cargo build --manifest-path src-tauri/Cargo.toml` and confirm clean compile — baseline for Rust changes
 
 **Checkpoint**: Both builds pass with no failures before any code changes land.
 
@@ -30,7 +30,7 @@
 
 **Purpose**: Add the runtime args parsing function in `src-tauri/src/util.rs` — this is shared infrastructure required by both user stories. US1 uses it to extract `--url`; US2 reads the already-resolved `pake_config` and needs no additional foundational work.
 
-- [X] T003 Add `parse_runtime_args()` function to `src-tauri/src/util.rs` that:
+- [x] T003 Add `parse_runtime_args()` function to `src-tauri/src/util.rs` that:
   - Reads `std::env::args()` and extracts the `--url <value>` pair
   - Returns `Option<String>` (None when flag is absent or value is empty/whitespace)
   - Emits a `[Pake] Warning: --url value is empty, using baked-in URL` to stderr when value is present but blank
@@ -48,7 +48,7 @@
 
 ### Tests for User Story 1
 
-- [X] T004 [P] [US1] Add unit test in `tests/unit/runtime-url-arg.test.ts` (or `.rs` integration test in `src-tauri/src/`) covering:
+- [x] T004 [P] [US1] Add unit test in `tests/unit/runtime-url-arg.test.ts` (or `.rs` integration test in `src-tauri/src/`) covering:
   - `--url https://valid.example.com` → returns the URL string
   - `--url ""` (empty) → returns None + warning emitted
   - `--url ftp://bad-scheme.com` → parse succeeds at this layer (scheme rejection is in T007)
@@ -57,21 +57,21 @@
 
 ### Implementation for User Story 1
 
-- [X] T005 [US1] Integrate `parse_runtime_args()` in `src-tauri/src/lib.rs` — call it immediately after `get_pake_config()` returns; store result as `runtime_url: Option<String>`
+- [x] T005 [US1] Integrate `parse_runtime_args()` in `src-tauri/src/lib.rs` — call it immediately after `get_pake_config()` returns; store result as `runtime_url: Option<String>`
 
-- [X] T006 [US1] Add URL scheme validation in `src-tauri/src/lib.rs` (or a helper in `util.rs`):
+- [x] T006 [US1] Add URL scheme validation in `src-tauri/src/lib.rs` (or a helper in `util.rs`):
   - If `runtime_url` is `Some(s)` and `s` is non-empty:
     - Parse with `url::Url::parse(&s)` (the `url` crate is already a transitive dependency via Tauri)
     - If parse fails → `eprintln!("[Pake] Error: --url '{}' is not a valid URL", s)` + `std::process::exit(1)`
     - If scheme is not `http` or `https` → `eprintln!("[Pake] Error: --url only accepts http:// or https:// schemes; url_type is immutable after build")` + `std::process::exit(1)`
   - Print info log to stdout: `println!("[Pake] URL overridden at runtime: {}", s)` when override is active
 
-- [X] T007 [US1] Override the URL in `pake_config` before it is used in `src-tauri/src/lib.rs`:
+- [x] T007 [US1] Override the URL in `pake_config` before it is used in `src-tauri/src/lib.rs`:
   - After validation passes, mutate `pake_config.windows[0].url = validated_url_string`
   - Keep `pake_config.windows[0].url_type` unchanged (must remain `"web"`)
   - All subsequent code that reads `pake_config` (window construction, `MultiWindowState`) automatically picks up the overridden URL — no further changes needed to `app/window.rs`
 
-- [X] T008 [P] [US1] Add `--url` as a discoverable help entry by updating the binary's argument hint: in `src-tauri/src/util.rs` add a `--help` handler that prints `Usage: <app> [--url <http(s)://address>]` when `--help` or `-h` is passed as the first argument, then exits 0. This ensures `SC-005` (discoverability) is met.
+- [x] T008 [P] [US1] Add `--url` as a discoverable help entry by updating the binary's argument hint: in `src-tauri/src/util.rs` add a `--help` handler that prints `Usage: <app> [--url <http(s)://address>]` when `--help` or `-h` is passed as the first argument, then exits 0. This ensures `SC-005` (discoverability) is met.
 
 **Checkpoint**: US1 complete when `./binary --url https://foo.com` navigates to `https://foo.com`, `./binary` (no flag) navigates to baked-in URL, and `./binary --url bad` exits with code 1.
 
@@ -85,7 +85,7 @@
 
 ### Tests for User Story 2
 
-- [X] T009 [P] [US2] Add unit test in `tests/unit/kiosk-cert-bypass.test.ts` covering the heuristic logic (can mock the window config):
+- [x] T009 [P] [US2] Add unit test in `tests/unit/kiosk-cert-bypass.test.ts` covering the heuristic logic (can mock the window config):
   - `fullscreen: true` + `ignore_certificate_errors: false` (default) on Linux → effective cert bypass = true
   - `fullscreen: false` + `ignore_certificate_errors: false` on Linux → effective cert bypass = false
   - `fullscreen: true` + `ignore_certificate_errors: true` (explicit) → cert bypass = true (explicit opt-in unchanged)
@@ -93,9 +93,10 @@
 
 ### Implementation for User Story 2
 
-- [X] T010 [US2] Modify the Linux cert-bypass block in `src-tauri/src/app/window.rs` (around line 304, inside the `if window_config.ignore_certificate_errors` block):
+- [x] T010 [US2] Modify the Linux cert-bypass block in `src-tauri/src/app/window.rs` (around line 304, inside the `if window_config.ignore_certificate_errors` block):
 
   Current code:
+
   ```rust
   if window_config.ignore_certificate_errors {
       #[cfg(target_os = "linux")]
@@ -105,6 +106,7 @@
   ```
 
   New logic: compute effective bypass flag before the block, then apply it:
+
   ```rust
   #[cfg(target_os = "linux")]
   let effective_ignore_cert = window_config.ignore_certificate_errors
@@ -133,13 +135,13 @@
 
 **Purpose**: Documentation updates and final validation across platforms.
 
-- [X] T011 [P] Update `docs/cli-usage.md` — add a "Runtime Flags (Binary Execution)" section after the existing CLI build flags section, documenting:
+- [x] T011 [P] Update `docs/cli-usage.md` — add a "Runtime Flags (Binary Execution)" section after the existing CLI build flags section, documenting:
   - `--url <http(s)://address>` — Override the baked-in URL at launch time (no rebuild required)
   - Kiosk certificate auto-bypass: note that binaries built with `fullscreen: true` automatically bypass self-signed certificate errors on Linux (Ubuntu 24.04 verified); security implication callout required
 
-- [X] T012 [P] Update `docs/cli-usage_CN.md` — same content as T011 translated to Chinese
+- [x] T012 [P] Update `docs/cli-usage_CN.md` — same content as T011 translated to Chinese
 
-- [X] T013 Run full test suite and confirm no regressions: `pnpm test --run && cargo test --manifest-path src-tauri/Cargo.toml`
+- [x] T013 Run full test suite and confirm no regressions: `pnpm test --run && cargo test --manifest-path src-tauri/Cargo.toml`
 
 ---
 
@@ -184,14 +186,14 @@ T003 complete
 
 ## Summary
 
-| Metric | Value |
-|---|---|
-| Total tasks | 13 |
-| US1 tasks | 5 (T004–T008) |
-| US2 tasks | 2 (T009–T010) |
-| Setup / Foundational | 3 (T001–T003) |
-| Polish / Docs | 3 (T011–T013) |
-| Parallelizable tasks | 8 marked [P] |
+| Metric                | Value                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Total tasks           | 13                                                                                                                          |
+| US1 tasks             | 5 (T004–T008)                                                                                                               |
+| US2 tasks             | 2 (T009–T010)                                                                                                               |
+| Setup / Foundational  | 3 (T001–T003)                                                                                                               |
+| Polish / Docs         | 3 (T011–T013)                                                                                                               |
+| Parallelizable tasks  | 8 marked [P]                                                                                                                |
 | Primary files changed | `src-tauri/src/util.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/app/window.rs`, `docs/cli-usage.md`, `docs/cli-usage_CN.md` |
-| New test files | `tests/unit/runtime-url-arg.test.ts`, `tests/unit/kiosk-cert-bypass.test.ts` |
-| Suggested MVP | Phase 1 + Phase 2 + Phase 3 (US1 only) |
+| New test files        | `tests/unit/runtime-url-arg.test.ts`, `tests/unit/kiosk-cert-bypass.test.ts`                                                |
+| Suggested MVP         | Phase 1 + Phase 2 + Phase 3 (US1 only)                                                                                      |

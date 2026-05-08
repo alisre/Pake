@@ -71,7 +71,11 @@ function validateUrl(raw: string): { valid: boolean; error?: string } {
 
 describe('parseRuntimeUrl — --url flag parsing', () => {
   it('returns the URL when --url is provided with a valid value', () => {
-    const result = parseRuntimeUrl(['./myapp', '--url', 'https://valid.example.com']);
+    const result = parseRuntimeUrl([
+      './myapp',
+      '--url',
+      'https://valid.example.com',
+    ]);
     expect(result.url).toBe('https://valid.example.com');
     expect(result.warning).toBeUndefined();
   });
@@ -107,7 +111,13 @@ describe('parseRuntimeUrl — --url flag parsing', () => {
   });
 
   it('correctly parses --url when other flags precede it', () => {
-    const result = parseRuntimeUrl(['./myapp', '--some-flag', 'val', '--url', 'https://foo.com']);
+    const result = parseRuntimeUrl([
+      './myapp',
+      '--some-flag',
+      'val',
+      '--url',
+      'https://foo.com',
+    ]);
     expect(result.url).toBe('https://foo.com');
   });
 });

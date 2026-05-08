@@ -579,6 +579,7 @@ Override the URL that was baked in at build time. This lets a single binary serv
 ```
 
 **Rules:**
+
 - Only `http://` and `https://` schemes are accepted. Other schemes (e.g., `file://`) will cause the app to exit with an error.
 - An empty or whitespace-only value falls back to the baked-in URL with a warning.
 - All other window configuration (dimensions, navigation rules, zoom, etc.) from build time remains in effect.
@@ -603,9 +604,8 @@ pake https://internal.example.com --name KioskApp --fullscreen
 
 **Platform behaviour:**
 
-| Platform | `fullscreen: true` auto-bypass | Explicit `ignore_certificate_errors: true` |
-|---|---|---|
-| Linux (Ubuntu 24.04) | ✅ Yes | ✅ Yes |
-| macOS | ❌ No | ✅ Yes |
-| Windows | ❌ No | ✅ Yes |
-
+| Platform             | `fullscreen: true` auto-bypass | Explicit `ignore_certificate_errors: true` |
+| -------------------- | ------------------------------ | ------------------------------------------ |
+| Linux (Ubuntu 24.04) | ✅ Yes                         | ✅ Yes                                     |
+| macOS                | ❌ No                          | ✅ Yes                                     |
+| Windows              | ❌ No                          | ✅ Yes                                     |

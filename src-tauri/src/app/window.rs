@@ -305,8 +305,7 @@ fn build_window(
     // operators can deploy against self-signed HTTPS endpoints without a rebuild.
     // On macOS and Windows the existing explicit flag is the only trigger.
     #[cfg(target_os = "linux")]
-    let effective_ignore_cert =
-        window_config.ignore_certificate_errors || window_config.fullscreen;
+    let effective_ignore_cert = window_config.ignore_certificate_errors || window_config.fullscreen;
 
     #[cfg(not(target_os = "linux"))]
     let effective_ignore_cert = window_config.ignore_certificate_errors;

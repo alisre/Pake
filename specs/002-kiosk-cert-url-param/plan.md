@@ -28,17 +28,17 @@ Both changes are additive, backward-compatible, and touch ≤ 3 files total.
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design — all gates still pass.*
+_GATE: Must pass before Phase 0 research. Re-checked after Phase 1 design — all gates still pass._
 
-| Principle | Status | Notes |
-|---|---|---|
-| I. Lightweight-First — no Electron | ✅ PASS | No new dependencies of any kind |
-| II. Single-Command Experience | ✅ PASS | `--url` is a runtime binary arg; `pake <url>` build command unchanged |
-| III. Config-Driven via `pake.json` | ✅ PASS | URL override mutates the in-memory `PakeConfig` struct, not the schema |
-| IV. JS Injection over Page Modification | ✅ PASS | Not applicable to this feature |
-| V. Cross-Platform Consistency | ✅ PASS | cert bypass limited to Linux via `#[cfg(target_os = "linux")]`; `--url` works on all platforms |
-| VI. Progressive Build Performance | ✅ PASS | Zero new Cargo crates; no compile time impact |
-| VII. Quality Gates | ✅ PASS | New unit tests required (included in tasks.md); `cargo fmt` must pass |
+| Principle                               | Status  | Notes                                                                                          |
+| --------------------------------------- | ------- | ---------------------------------------------------------------------------------------------- |
+| I. Lightweight-First — no Electron      | ✅ PASS | No new dependencies of any kind                                                                |
+| II. Single-Command Experience           | ✅ PASS | `--url` is a runtime binary arg; `pake <url>` build command unchanged                          |
+| III. Config-Driven via `pake.json`      | ✅ PASS | URL override mutates the in-memory `PakeConfig` struct, not the schema                         |
+| IV. JS Injection over Page Modification | ✅ PASS | Not applicable to this feature                                                                 |
+| V. Cross-Platform Consistency           | ✅ PASS | cert bypass limited to Linux via `#[cfg(target_os = "linux")]`; `--url` works on all platforms |
+| VI. Progressive Build Performance       | ✅ PASS | Zero new Cargo crates; no compile time impact                                                  |
+| VII. Quality Gates                      | ✅ PASS | New unit tests required (included in tasks.md); `cargo fmt` must pass                          |
 
 **No violations. No Complexity Tracking needed.**
 
@@ -54,7 +54,7 @@ specs/002-kiosk-cert-url-param/
 └── spec.md          ← source of requirements
 ```
 
-*No `data-model.md`, `contracts/`, or `quickstart.md` required — this feature has no new entities, no external API contracts, and no new setup steps for users.*
+_No `data-model.md`, `contracts/`, or `quickstart.md` required — this feature has no new entities, no external API contracts, and no new setup steps for users._
 
 ### Source Code Changes
 
@@ -79,29 +79,31 @@ tests/unit/
 
 ## Phase 0: Research
 
-*All resolved from existing codebase — no external research agents needed.*
+_All resolved from existing codebase — no external research agents needed._
 
 ### Decision Log
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Args parsing library | `std::env::args()` (stdlib) | No new crate needed; `--url` is the only runtime flag |
-| URL validation | `url::Url::parse()` (already in Tauri transitive deps) | Zero cost; already available |
-| Config mutation strategy | Direct field assignment: `pake_config.windows[0].url = s` | Simplest possible approach; `url` is `String` |
-| Cert bypass trigger | `window_config.fullscreen \|\| window_config.ignore_certificate_errors` | Single `\|\|` — no new fields, no new state |
-| New Cargo dependencies | None | `url` crate already present via Tauri |
-| Clap / structopt | Rejected | YAGNI — adding a full arg parsing framework for one flag would violate Principle VI |
+| Decision                 | Choice                                                                  | Rationale                                                                           |
+| ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Args parsing library     | `std::env::args()` (stdlib)                                             | No new crate needed; `--url` is the only runtime flag                               |
+| URL validation           | `url::Url::parse()` (already in Tauri transitive deps)                  | Zero cost; already available                                                        |
+| Config mutation strategy | Direct field assignment: `pake_config.windows[0].url = s`               | Simplest possible approach; `url` is `String`                                       |
+| Cert bypass trigger      | `window_config.fullscreen \|\| window_config.ignore_certificate_errors` | Single `\|\|` — no new fields, no new state                                         |
+| New Cargo dependencies   | None                                                                    | `url` crate already present via Tauri                                               |
+| Clap / structopt         | Rejected                                                                | YAGNI — adding a full arg parsing framework for one flag would violate Principle VI |
 
 ## Phase 1: Design
 
 ### US1 — Runtime `--url` Flag
 
 **Approach**: Add a single function `parse_runtime_url()` in `util.rs` that:
+
 1. Iterates `std::env::args()` looking for `"--url"` followed by the next token
 2. Returns `None` if flag is absent or value is empty/whitespace (with stderr warning for empty)
 3. Returns `Some(String)` otherwise (raw string, not yet validated)
 
 In `lib.rs`, immediately after `get_pake_config()`:
+
 1. Call `parse_runtime_url()`
 2. If `Some(raw)`: validate with `url::Url::parse()` — exit(1) on parse failure; exit(1) if scheme ≠ http/https
 3. If valid: print `[Pake] URL overridden at runtime: {raw}` to stdout; set `pake_config.windows[0].url = raw`
@@ -149,5 +151,4 @@ This feature adds no HTTP endpoints, no IPC commands, no public library APIs, an
 
 ## Complexity Tracking
 
-*No Constitution violations — section intentionally empty.*
-
+_No Constitution violations — section intentionally empty._

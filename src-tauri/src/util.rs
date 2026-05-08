@@ -14,9 +14,16 @@ pub fn parse_runtime_url() -> Option<String> {
     let args: Vec<String> = env::args().collect();
 
     // Handle --help / -h
-    if args.get(1).map(|a| a == "--help" || a == "-h").unwrap_or(false) {
+    if args
+        .get(1)
+        .map(|a| a == "--help" || a == "-h")
+        .unwrap_or(false)
+    {
         let binary = args.first().map(|s| s.as_str()).unwrap_or("pake-app");
-        println!("Usage: {} [--url <http(s)://address>] [--ignore-cert]", binary);
+        println!(
+            "Usage: {} [--url <http(s)://address>] [--ignore-cert]",
+            binary
+        );
         println!();
         println!("Options:");
         println!("  --url <address>   Override the baked-in URL at launch time.");

@@ -5,7 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "实现在ubuntu 24.04 Desktop 下运行二进制程序 kiosk模式时，能自动忽略自签名证书错误提示；增加--url 参数，可以打开指定的web 地址"
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 — Runtime URL Override via `--url` Flag (Priority: P1)
 
@@ -50,7 +50,7 @@ An enterprise deploys Pake-packaged apps on Ubuntu 24.04 Desktop kiosk terminals
 - What happens when the runtime `--url` points to a `local` file path while the binary was built with `url_type: "web"`? This is rejected with a clear error (`[Pake] Error: --url only accepts http:// or https:// schemes; url_type is immutable after build`); `url_type` remains immutable after build.
 - What if `--url` is an empty string? Falls back to baked-in URL with a stderr warning; does not exit with error (distinguished from syntactically invalid URLs).
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -71,7 +71,7 @@ An enterprise deploys Pake-packaged apps on Ubuntu 24.04 Desktop kiosk terminals
 - **Runtime Arguments** (Rust): A new parsing step in `util.rs` or `lib.rs` that reads `std::env::args()` to extract `--url` before `get_pake_config()` is used for window construction.
 - **Kiosk Mode Heuristic** (Rust/Linux): The logic in `app/window.rs` that determines whether to auto-append `--ignore-certificate-errors` based on `fullscreen` flag on Linux.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
