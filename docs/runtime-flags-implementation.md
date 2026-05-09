@@ -252,13 +252,74 @@ DMA-BUF 零拷贝纹理共享在部分 Mesa/Wayland 组合下仍存在视觉撕�
 
 ---
 
+### 内存优化：减少 WebKitGTK 进程内存占用（2026-05-09）
+
+**触发背景：** Ubuntu 系统日志显示 `__vm_enough_memory` 大量失败，`browser-binary` / `WebKitWebProces` / `WebKitNetworkPr` 不断尝试超大内存分配，最终导致物理内存耗尽 → `VM_FAULT_OOM` → GNOME Shell SIGBUS 崩溃。
+
+#### 3.1 禁用 WebKitGTK 沙盒进程
+
+**修改文件：** `src-tauri/src/lib.rs` — Linux 块新增
+
+```rust
+if std::env::var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").is_err() {
+    std::env::set_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+}
+```
+
+**原因：** WebKitGTK 默认额外启动一个特权 launcher 进程来孵化沙盒化的 WebProcess。kiosk 只访问固定内网 URL，渲染隔离安全需求低，禁用后合并进程层级，**节省约 30–60 MB RSS**。
+
+调用者可在启动前设置同名环境变量为空字符串来覆盖此默认值（代码已用 `.is_err()` 保护）。
+
+#### 3.2 限制 glibc malloc arena 数量
+
+**修改文件：** `src-tauri/src/lib.rs` — Linux 块新增
+
+```rust
+if std::env::var("MALLOC_ARENA_MAX").is_err() {
+    std::env::set_var("MALLOC_ARENA_MAX", "2");
+}
+```
+
+**原因：** glibc 默认创建最多 `8 × CPU核数` 个 malloc arena，每个 arena 预映射约 64 MB 虚拟地址空间以减少锁争用。单标签 kiosk 不需要高并发分配，2 个 arena 完全够用，**减少约 64–256 MB 虚拟地址映射**，降低触发 `__vm_enough_memory` 拒绝的概率。
+
+#### 3.3 禁用 WebKitGTK HTTP 缓存和页面缓存
+
+**修改文件：** `src-tauri/src/lib.rs` — `with_webview()` 块内新增
+
+```rust
+use webkit2gtk::{CacheModel, WebContextExt, WebViewExt};
+// ...
+if let Some(ctx) = wkv.context() {
+    ctx.set_cache_model(CacheModel::DocumentViewer);
+}
+```
+
+**原因：** `CacheModel::DocumentViewer` 禁用：
+- 磁盘 HTTP 缓存（通常缓存在 `~/.cache/` 下）
+- 内存页面缓存（Back/Forward cache，默认保留最近几个页面的完整快照）
+
+kiosk 只访问单一固定 URL，这两类缓存没有实际价值，**节省约 20–50 MB RSS**。
+
+#### 3.4 合并 with_webview() 调用
+
+原代码在 `needs_ignore_cert == true` 时才调用 `with_webview()`，新代码改为**始终调用一次** `with_webview()`，在其中同时完成：
+1. 设置 `CacheModel::DocumentViewer`（无条件）
+2. 绑定 TLS 信号（按需）
+
+避免了两次调用的可能性，也确保缓存优化在所有 Linux 实例上生效。
+
+**三项优化合计预期节省：约 50–110 MB RSS**
+
+---
+
 ## 新分支上复现此功能的 Checklist
 
 - [ ] `src-tauri/Cargo.toml`：`tauri` 添加 `"wry"` feature
 - [ ] `src-tauri/Cargo.toml`：添加 `[target.'cfg(target_os = "linux")'.dependencies]` + `webkit2gtk = "2"`
 - [ ] `src-tauri/src/util.rs`：添加 `parse_runtime_url()` 和 `parse_runtime_ignore_cert()`
 - [ ] `src-tauri/src/lib.rs`：在入口读取两个标志并写入 `pake_config`
-- [ ] `src-tauri/src/lib.rs`：在 `setup` 回调里 `set_window()` 之后添加 Linux TLS 信号绑定块
+- [ ] `src-tauri/src/lib.rs`：Linux 块设置 `WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1` 和 `MALLOC_ARENA_MAX=2`
+- [ ] `src-tauri/src/lib.rs`：`with_webview()` 内设置 `CacheModel::DocumentViewer` + 按需绑定 TLS 信号
 - [ ] `src-tauri/src/app/window.rs`：确认已移除 Linux 下的 `--ignore-certificate-errors` browser arg
 - [ ] `src-tauri/src/app/window.rs`：`effective_ignore_cert` Linux 条件包含 `|| window_config.fullscreen`
 - [ ] `src-tauri/src/lib.rs`：**不要**强制设置 `WEBKIT_DISABLE_COMPOSITING_MODE=1`（保持 GPU 合成启用）

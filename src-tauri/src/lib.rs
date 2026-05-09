@@ -38,6 +38,25 @@ pub fn run_app() {
         // if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
         //     std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
         // }
+
+        // Memory reduction for kiosk/embedded systems:
+        //
+        // Disable the WebKitGTK sandbox. By default WebKitGTK spawns a separate
+        // privileged "launcher" process plus a sandboxed WebProcess. On low-memory
+        // machines this can cost an extra 30-60 MB of RSS. Disabling the sandbox
+        // merges these into the existing WebProcess hierarchy.
+        // Trade-off: slightly reduced renderer isolation; acceptable for a kiosk
+        // that only loads a single trusted internal URL.
+        if std::env::var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS").is_err() {
+            std::env::set_var("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+        }
+
+        // Limit glibc malloc arena count. By default glibc creates up to 8×CPU
+        // arenas to reduce lock contention, but each arena pre-maps ~64 MB of VA
+        // space. In a single-tab kiosk 2 arenas are more than sufficient.
+        if std::env::var("MALLOC_ARENA_MAX").is_err() {
+            std::env::set_var("MALLOC_ARENA_MAX", "2");
+        }
     }
 
     let (mut pake_config, tauri_config) = get_pake_config();
@@ -149,6 +168,11 @@ pub fn run_app() {
             // effect. The correct fix is to hook into the `load-failed-with-tls-errors`
             // signal and call allow_tls_certificate_for_host() to permit the cert, then
             // reload. This matches what webkit2gtk expects for TLS bypass.
+            //
+            // We also apply memory optimizations in the same with_webview() call:
+            //   - CacheModel::DocumentViewer: disables the on-disk HTTP cache and the
+            //     in-memory page cache. Kiosk apps load a single fixed URL; caching
+            //     only wastes RAM (typically 20-50 MB for page cache alone).
             #[cfg(target_os = "linux")]
             {
                 let needs_ignore_cert = pake_config
@@ -156,10 +180,16 @@ pub fn run_app() {
                     .first()
                     .map(|w| w.ignore_certificate_errors || w.fullscreen)
                     .unwrap_or(false);
-                if needs_ignore_cert {
-                    if let Err(e) = window.with_webview(|webview| {
-                        use webkit2gtk::{WebContextExt, WebViewExt};
-                        let wkv = webview.inner();
+                if let Err(e) = window.with_webview(move |webview| {
+                    use webkit2gtk::{CacheModel, WebContextExt, WebViewExt};
+                    let wkv = webview.inner();
+
+                    // Disable HTTP + page caches — saves ~20-50 MB RSS for kiosk.
+                    if let Some(ctx) = wkv.context() {
+                        ctx.set_cache_model(CacheModel::DocumentViewer);
+                    }
+
+                    if needs_ignore_cert {
                         wkv.connect_load_failed_with_tls_errors(
                             |view, failing_uri, cert, _flags| {
                                 if let Some(ctx) = view.context() {
@@ -178,9 +208,9 @@ pub fn run_app() {
                                 false
                             },
                         );
-                    }) {
-                        eprintln!("[Pake] Failed to attach TLS error handler: {e}");
                     }
+                }) {
+                    eprintln!("[Pake] Failed to configure WebKitGTK webview: {e}");
                 }
             }
             set_system_tray(
