@@ -295,6 +295,7 @@ if let Some(ctx) = wkv.context() {
 ```
 
 **原因：** `CacheModel::DocumentViewer` 禁用：
+
 - 磁盘 HTTP 缓存（通常缓存在 `~/.cache/` 下）
 - 内存页面缓存（Back/Forward cache，默认保留最近几个页面的完整快照）
 
@@ -303,6 +304,7 @@ kiosk 只访问单一固定 URL，这两类缓存没有实际价值，**节省�
 #### 3.4 合并 with_webview() 调用
 
 原代码在 `needs_ignore_cert == true` 时才调用 `with_webview()`，新代码改为**始终调用一次** `with_webview()`，在其中同时完成：
+
 1. 设置 `CacheModel::DocumentViewer`（无条件）
 2. 绑定 TLS 信号（按需）
 
