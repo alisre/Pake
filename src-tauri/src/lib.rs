@@ -136,6 +136,45 @@ pub fn run_app() {
             // --- Menu Construction End ---
 
             let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
+
+            // On Linux/WebKitGTK, the Chromium flag --ignore-certificate-errors has no
+            // effect. The correct fix is to hook into the `load-failed-with-tls-errors`
+            // signal and call allow_tls_certificate_for_host() to permit the cert, then
+            // reload. This matches what webkit2gtk expects for TLS bypass.
+            #[cfg(target_os = "linux")]
+            {
+                let needs_ignore_cert = pake_config
+                    .windows
+                    .first()
+                    .map(|w| w.ignore_certificate_errors || w.fullscreen)
+                    .unwrap_or(false);
+                if needs_ignore_cert {
+                    if let Err(e) = window.with_webview(|webview| {
+                        use webkit2gtk::{WebContextExt, WebViewExt};
+                        let wkv = webview.inner();
+                        wkv.connect_load_failed_with_tls_errors(
+                            |view, failing_uri, cert, _flags| {
+                                if let Some(ctx) = view.context() {
+                                    let host = failing_uri
+                                        .strip_prefix("https://")
+                                        .and_then(|s| s.split('/').next())
+                                        .and_then(|s| s.split('@').last())
+                                        .unwrap_or("")
+                                        .to_owned();
+                                    if !host.is_empty() {
+                                        ctx.allow_tls_certificate_for_host(cert, &host);
+                                        view.load_uri(failing_uri);
+                                        return true;
+                                    }
+                                }
+                                false
+                            },
+                        );
+                    }) {
+                        eprintln!("[Pake] Failed to attach TLS error handler: {e}");
+                    }
+                }
+            }
             set_system_tray(
                 app.app_handle(),
                 show_system_tray,

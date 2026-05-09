@@ -316,10 +316,9 @@ fn build_window(
             windows_browser_args.push_str(" --ignore-certificate-errors");
         }
 
-        #[cfg(target_os = "linux")]
-        {
-            linux_browser_args.push_str(" --ignore-certificate-errors");
-        }
+        // NOTE: On Linux/WebKitGTK, --ignore-certificate-errors is a Chromium flag
+        // and has NO effect. The TLS bypass is handled via the webkit2gtk
+        // load-failed-with-tls-errors signal in lib.rs after window creation.
 
         #[cfg(target_os = "macos")]
         {

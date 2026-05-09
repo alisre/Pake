@@ -98,7 +98,7 @@ jobs:
         timeout-minutes: 25
         shell: bash
         run: |
-          ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}" --incognito  --keep-binary --enable-drag-drop)
+          ARGS=("${{ inputs.url }}" "--name" "${{ inputs.name }}" --fullscreen --incognito  --keep-binary --enable-drag-drop)
 
           if [ -n "${{ inputs.icon }}" ]; then
             ARGS+=("--icon" "${{ inputs.icon }}")
