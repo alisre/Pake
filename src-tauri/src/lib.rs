@@ -24,12 +24,20 @@ use util::{get_pake_config, parse_runtime_ignore_cert, parse_runtime_url};
 pub fn run_app() {
     #[cfg(target_os = "linux")]
     {
+        // DMA-BUF renderer: disabled by default for compatibility with some Mesa/Wayland
+        // combinations that produce visual glitches.  Users on fully-capable systems may
+        // set WEBKIT_DISABLE_DMABUF_RENDERER=0 to re-enable it for a small GPU perf gain.
         if std::env::var("WEBKIT_DISABLE_DMABUF_RENDERER").is_err() {
             std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         }
-        if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
-            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
-        }
+        // GPU compositing: keep enabled (do NOT set WEBKIT_DISABLE_COMPOSITING_MODE).
+        // Ubuntu 24.04 + Mesa drivers support WebKitGTK hardware compositing correctly.
+        // Disabling it forces software rendering for all layer composition, which causes
+        // high CPU usage, janky scrolling, and poor CSS animation performance.
+        // Only set the env-var if the caller has explicitly opted out (e.g. for VM use).
+        // if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
+        //     std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        // }
     }
 
     let (mut pake_config, tauri_config) = get_pake_config();
