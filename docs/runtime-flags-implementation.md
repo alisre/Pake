@@ -4,13 +4,14 @@
 
 Pake 二进制在打包后支持两个运行时标志，无需重新编译：
 
-| 标志 | 功能 |
-|------|------|
-| `--url <http(s)://address>` | 覆盖构建时烧入的 URL |
-| `--ignore-cert` | 忽略 TLS 证书错误（自签名证书） |
-| `--help` / `-h` | 打印用法并退出 |
+| 标志                        | 功能                            |
+| --------------------------- | ------------------------------- |
+| `--url <http(s)://address>` | 覆盖构建时烧入的 URL            |
+| `--ignore-cert`             | 忽略 TLS 证书错误（自签名证书） |
+| `--help` / `-h`             | 打印用法并退出                  |
 
 **使用示例：**
+
 ```bash
 ./myapp --url https://192.168.50.66 --ignore-cert
 ./myapp --url http://10.0.0.1:8080
@@ -56,6 +57,7 @@ webkit2gtk = "2"  # ← 新增整块
 ```
 
 **原因：**
+
 - `"wry"` feature 才能解锁 `WebviewWindow::with_webview()`
 - `webkit2gtk = "2"` 提供 `WebViewExt`、`WebContextExt`、`connect_load_failed_with_tls_errors`、`allow_tls_certificate_for_host` 等 API
 
@@ -157,6 +159,7 @@ let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
 ```
 
 **关键设计：**
+
 - `w.fullscreen == true`（kiosk 模式）时**自动**启用证书忽略，不需要额外传 `--ignore-cert`
 - `with_webview` 必须在主线程执行（tauri 保证），信号回调也在主线程
 
@@ -188,11 +191,11 @@ let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
 
 ## 平台差异对比
 
-| 平台 | TLS 绕过机制 | 触发条件 |
-|------|-------------|---------|
-| **Linux** (WebKitGTK) | `connect_load_failed_with_tls_errors` + `allow_tls_certificate_for_host()` | `--ignore-cert` 或 `fullscreen=true` |
-| **Windows** (WebView2) | `--ignore-certificate-errors` Chromium 标志 | `--ignore-cert` |
-| **macOS** (WKWebView) | `--ignore-certificate-errors` Chromium 标志 | `--ignore-cert` |
+| 平台                   | TLS 绕过机制                                                               | 触发条件                             |
+| ---------------------- | -------------------------------------------------------------------------- | ------------------------------------ |
+| **Linux** (WebKitGTK)  | `connect_load_failed_with_tls_errors` + `allow_tls_certificate_for_host()` | `--ignore-cert` 或 `fullscreen=true` |
+| **Windows** (WebView2) | `--ignore-certificate-errors` Chromium 标志                                | `--ignore-cert`                      |
+| **macOS** (WKWebView)  | `--ignore-certificate-errors` Chromium 标志                                | `--ignore-cert`                      |
 
 > **注意：** Linux 的 kiosk/fullscreen 模式额外自动启用 TLS 绕过，因为部署场景通常是内网自签名证书的 kiosk 终端。
 
@@ -203,6 +206,7 @@ let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
 社区曾有一个 [alisre/wry fork (commit ea58d130)](https://github.com/alisre/wry/commit/ea58d130f62d28ac85a0215c599285affd01abb6) 将 TLS 绕过逻辑内嵌到 wry 本身，通过 `PlatformSpecificWebViewAttributes` 暴露新字段。
 
 我们的方案通过 tauri 已有的 `with_webview()` 逃生舱门**绕过 wry 直接操作底层 webkit2gtk**，效果完全相同，且：
+
 - 无需维护任何 wry fork
 - 随 tauri/wry 正常升级无需 rebase
 - 仅依赖 tauri 和 webkit2gtk 的公开稳定 API
@@ -218,11 +222,13 @@ let window = set_window(app.app_handle(), &pake_config, &tauri_config)?;
 **问题：** 历史代码在 Linux 启动时强制设置 `WEBKIT_DISABLE_COMPOSITING_MODE=1`，此环境变量会禁用 WebKitGTK 的 GPU 硬件合成，退化为 CPU 软件渲染所有合成层。
 
 **影响：**
+
 - CSS transform / opacity 动画 → CPU 纯软渲染
 - 滚动性能差，帧率低
 - 高 CPU 占用（尤其页面有动效时）
 
 **修改前：**
+
 ```rust
 if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
     std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
@@ -230,6 +236,7 @@ if std::env::var("WEBKIT_DISABLE_COMPOSITING_MODE").is_err() {
 ```
 
 **修改后：**
+
 ```rust
 // GPU compositing: keep enabled (do NOT set WEBKIT_DISABLE_COMPOSITING_MODE).
 // Ubuntu 24.04 + Mesa drivers support WebKitGTK hardware compositing correctly.
